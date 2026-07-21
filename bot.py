@@ -1,39 +1,94 @@
 import os
 import telebot
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import requests
 import threading
+import base64
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# جلب توكن البوت من متغيرات البيئة بأمان
+# 1. إعداد التوكنات وأمان السيرفر
 BOT_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# كود إضافي لفتح منفذ وهمي لإرضاء سيرفر Render ليعمل 24 ساعة
+# كود إرضاء سيرفر Render لتجاوز فحص المنفذ مجاناً
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(b"Bot is alive!")
+        self.wfile.write(b"Firasah Bot is alive!")
 
 def run_health_server():
     port = int(os.environ.get("PORT", 10000))
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# أمر البداية /start
+# التلقين الصارم المعتمد على كتاب علم الفراسة وقواعده الشاملة للوجه
+PROMPT_FIRASAH = (
+    "أنت الآن خبير بروفيسور متخصص في علم الفراسة وتحليل الشخصية بناءً على ملامح الوجه البدنية بدقة. "
+    "ستقوم بتحليل هذه الصورة الشخصية للمستخدم بناءً على أصول علم الفراسة المحددة في الكتاب التعليمي المعتمد لدينا. "
+    "قم بفحص الملامح التالية بالترتيب إن ظهرت بوضوح في الصورة: "
+    "1. شكل الجبهة (عريضة، ضيقة، مستوية، بارزة) وعلاقتها بالذكاء والتفكير والتخطيط. "
+    "2. العيون (واسعة، غائرة، جاحظة، ضيقة، المسافة بينهما) وعلاقتها بالطباع والعاطفة والتركيز. "
+    "3. الأنف (طويل، قصير، معقوف، عريض) وعلاقته بالعزة، الطموح، والتعامل المالي. "
+    "4. الفم والشفايف (واسع، ضيق، شفة علوية أو سفلية ممتلئة) وعلاقته بالتعبير عن المشاعر والتواصل والخصال الاجتماعية. "
+    "5. الحواجب (كثيفة، رقيقة, متصلة, متباعدة، مقوسة) وعلاقتها بالإرادة والاندفاع. "
+    "6. شكل وتدويرة الوجه والفك (مربع، دائري، مثلث، بارز) وعلاقته بالصبر، العزيمة، أو العاطفة. "
+    "اكتب التقرير النهائي باللغة العربية بأسلوب راقٍ، منظم، وواضح كقراءة فراسة علمية موثوقة ونبيلة، "
+    "وقدم نصائح إيجابية للمستخدم لتطوير جوانب شخصيته بناءً على التحليل."
+)
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك! أنا بوت تليجرام الخاص بك، أعمل الآن بنجاح وعلى مدار 24 ساعة. 🚀")
+    bot.reply_to(
+        message, 
+        "مرحباً بك في بوت خبير علم الفراسة! 📸 الحاصل على تدريب مخصص وفقاً لكتاب وقواعد علم الفراسة الأصيلة.\n\n"
+        "يرجى إرسال صورة شخصية واضحة للوجه (إضاءة جيدة وملامح بارزة وبدون فلاتر)، وسأقوم بتحليل سمات شخصيتك وطباعك بدقة فوراً."
+    )
 
-# الرد التلقائي على أي رسالة نصية أخرى
-@bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    bot.reply_to(message, f"لقد استلمت رسالتك: {message.text}")
+@bot.message_handler(content_types=['photo'])
+def handle_photo(message):
+    try:
+        bot.reply_to(message, "جاري استلام الصورة وفحص الملامح وفقاً لقواعد علم الفراسة... انتظر دقيقة من فضلك 🔍📖")
+        
+        # جلب رابط الصورة من تليجرام
+        file_info = bot.get_file(message.photo[-1].file_id)
+        file_url = f"https://telegram.org{BOT_TOKEN}/{file_info.file_path}"
+        
+        # تحميل الصورة بصيغة بايتات لإرسالها مباشرة إلى جيميني
+        img_data = requests.get(file_url).content
+        
+        # إرسال الطلب إلى خوادم Google Gemini 2.5 Flash للرؤية والتحليل
+        gemini_url = f"https://googleapis.com{GEMINI_KEY}"
+        
+        image_base64 = base64.b64encode(img_data).decode('utf-8')
+        
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": PROMPT_FIRASAH},
+                    {
+                        "inlineData": {
+                            "mimeType": "image/jpeg",
+                            "data": image_base64
+                        }
+                    }
+                ]
+            }]
+        }
+        
+        res = requests.post(gemini_url, json=payload)
+        res_json = res.json()
+        
+        # استخراج النص المحلل من إجابة الذكاء الاصطناعي
+        report_text = res_json['candidates'][0]['content']['parts'][0]['text']
+        
+        bot.reply_to(message, f"📋 **تقرير الفراسة وتحليل الشخصية:**\n\n{report_text}", parse_mode="Markdown")
+        
+    except Exception as e:
+        bot.reply_to(message, f"حدث خطأ أثناء الاتصال بخادم التحليل، يرجى المحاولة مرة أخرى أو التأكد من إعداد المفتاح.")
 
-# تشغيل البوت والسيرفر معاً
 if __name__ == "__main__":
-    print("البوت يعمل الآن...")
-    # تشغيل السيرفر الوهمي في الخلفية
+    print("بوت الفراسة يعمل الآن...")
     threading.Thread(target=run_health_server, daemon=True).start()
-    # تشغيل البوت
     bot.infinity_polling()
