@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 # 1. ضع توكن تليجرام الجديد الخاص بك هنا مباشرة بين علامتي التنصيص
 BOT_TOKEN = "8903474590:AAEJCHKxvIrDa3Z6-l5mGaAKDUvYjwjIADA"
 
-GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_KEY = "AQ.Ab8RN6Lss66iDgdwNEKT0yjjTON1pTUZqVoz_tSrSCi_WpjEHw"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # كود إرضاء سيرفر Render لتجاوز فحص المنفذ مجاناً
