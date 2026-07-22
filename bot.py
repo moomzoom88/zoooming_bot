@@ -6,7 +6,7 @@ import base64
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # 1. ضع توكن تليجرام الجديد الخاص بك هنا مباشرة بين علامتي التنصيص
-BOT_TOKEN = "ضع_توكن_تليجرام_الجديد_هنا"
+BOT_TOKEN = "8903474590:AAEJCHKxvIrDa3Z6-l5mGaAKDUvYjwjIADA"
 
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 bot = telebot.TeleBot(BOT_TOKEN)
