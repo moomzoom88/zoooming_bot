@@ -5,8 +5,9 @@ import threading
 import base64
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# 1. إعداد التوكنات وأمان السيرفر
-BOT_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+# 1. ضع توكن تليجرام الجديد الخاص بك هنا مباشرة بين علامتي التنصيص
+BOT_TOKEN = "ضع_توكن_تليجرام_الجديد_هنا"
+
 GEMINI_KEY = os.environ.get('GEMINI_API_KEY')
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -81,7 +82,7 @@ def handle_photo(message):
         res_json = res.json()
         
         try:
-            report_text = res_json['candidates'][0]['content']['parts'][0]['text']
+            report_text = res_json['candidates']['content']['parts']['text']
             bot.reply_to(message, f"📋 **تقرير الفراسة وتحليل الشخصية:**\n\n{report_text}")
         except Exception as err:
             bot.reply_to(message, "تنبيه: تم استقبال الصورة بنجاح ولكن خادم التحليل واجه ضغطاً مؤقتاً. يرجى إعادة إرسال الصورة مرة أخرى.")
@@ -91,7 +92,5 @@ def handle_photo(message):
 
 if __name__ == "__main__":
     print("بوت الفراسة يعمل الآن...")
-    # تشغيل خادم المنفذ لويندوز/ريندر في خيط جانبي
     threading.Thread(target=run_health_server, daemon=True).start()
-    # تشغيل البوت في العملية الرئيسية لمنع الانهيار
     bot.infinity_polling()
