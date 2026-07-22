@@ -19,9 +19,12 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.wfile.write(b"Firasah Bot is alive!")
 
 def run_health_server():
-    port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
-    server.serve_forever()
+    try:
+        port = int(os.environ.get("PORT", 10000))
+        server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+        server.serve_forever()
+    except Exception as e:
+        print(f"Server error: {e}")
 
 # التلقين الصارم المعتمد على كتاب علم الفراسة وقواعده الشاملة للوجه
 PROMPT_FIRASAH = (
@@ -80,13 +83,15 @@ def handle_photo(message):
         try:
             report_text = res_json['candidates'][0]['content']['parts'][0]['text']
             bot.reply_to(message, f"📋 **تقرير الفراسة وتحليل الشخصية:**\n\n{report_text}")
-        except:
-            bot.reply_to(message, "تنبيه: تم استقبال الصورة بنجاح ولكن خادم التحليل يحتاج لإعادة المحاولة. يرجى التأكد من وضوح الصورة وإرسالها مجدداً.")
+        except Exception as err:
+            bot.reply_to(message, "تنبيه: تم استقبال الصورة بنجاح ولكن خادم التحليل واجه ضغطاً مؤقتاً. يرجى إعادة إرسال الصورة مرة أخرى.")
         
     except Exception as e:
         bot.reply_to(message, "حدث خطأ أثناء الاتصال بخادم التحليل، يرجى المحاولة مرة أخرى لاحقاً.")
 
 if __name__ == "__main__":
     print("بوت الفراسة يعمل الآن...")
+    # تشغيل خادم المنفذ لويندوز/ريندر في خيط جانبي
     threading.Thread(target=run_health_server, daemon=True).start()
+    # تشغيل البوت في العملية الرئيسية لمنع الانهيار
     bot.infinity_polling()
